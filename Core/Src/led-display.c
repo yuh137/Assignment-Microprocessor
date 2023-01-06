@@ -46,8 +46,8 @@ void dataOUT (GPIO_PinState state){
 	HAL_GPIO_WritePin(LED_SDI_GPIO_Port, LED_SDI_Pin, state);
 }
 
-uint8_t getBitValue (uint8_t data, uint8_t index){
-	data = (data >> index) && 0x01;
+uint8_t getBitValue (uint32_t data, int index){
+	data = (data >> index) & 0x01;
 	return data;
 }
 
@@ -64,9 +64,9 @@ uint8_t getBitValue (uint8_t data, uint8_t index){
 //	latchEnable();
 //}
 
-void Led_Display(uint8_t data){
+void Led_Display(uint32_t data){
 	latchDisable();
-	for(uint8_t i = 0; i < 8; i++){
+	for(uint8_t i = 0; i < 24; i++){
 		clockOFF();
 		//dataOUT(data & 0x01);
 		dataOUT(getBitValue(data, i));
@@ -74,4 +74,91 @@ void Led_Display(uint8_t data){
 	}
 	latchEnable();
 }
+
+void ledDisplay1 (void){	//red1 + green2
+	uint8_t i;
+	uint32_t temp1 = 0x400020;
+	latchDisable();
+	for(i = 0; i < 24; i++){
+		clockOFF();
+		dataOUT(getBitValue(temp1, i));
+		clockON();
+	}
+	latchEnable();
+}
+
+void ledDisplay2 (void){	//red1 + yellow2
+	uint8_t i;
+	uint32_t temp1 = 0x4000c0;
+	latchDisable();
+	for(i = 0; i < 24; i++){
+		clockOFF();
+		dataOUT(getBitValue(temp1, i));
+		clockON();
+	}
+	latchEnable();
+}
+
+void ledDisplay3 (void){	//Green1 + Red2
+	uint8_t i;
+	uint32_t temp1 = 0x080100;
+	latchDisable();
+	for(i = 0; i < 24; i++){
+		clockOFF();
+		dataOUT(getBitValue(temp1, i));
+		clockON();
+	}
+	latchEnable();
+}
+
+void ledDisplay4 (void){	//Yellow1 + Red2
+	uint8_t i;
+	uint32_t temp1 = 0x300100;
+	latchDisable();
+	for(i = 0; i < 24; i++){
+		clockOFF();
+		dataOUT(getBitValue(temp1, i));
+		clockON();
+	}
+	latchEnable();
+}
+
+
+void enableLedPannel (int index){
+	switch (index){
+		case 1:
+			ledDisplay1();
+			break;
+		case 2:
+			ledDisplay2();
+			break;
+		case 3:
+			ledDisplay3();
+			break;
+		case 4:
+			ledDisplay4();
+			break;
+		default:
+			break;
+	}
+}
+
+//void displayNum(int num1, int num2){
+//	char str1[2];
+//	char str2[2];
+//
+//	sprintf(str1, "%d", num1);
+//	sprintf(str2, "%d", num2);
+//
+//	Lcd_Goto_XY(0, 0);
+//	Lcd_Send_String("Lane 1: ");
+//	Lcd_Goto_XY(0, 8);
+//	Lcd_Send_String(str1);
+//
+//	Lcd_Goto_XY(1, 0);
+//	Lcd_Send_String("Lane 2: ");
+//	Lcd_Goto_XY(1, 8);
+//	Lcd_Send_String(str2);
+//
+//}
 

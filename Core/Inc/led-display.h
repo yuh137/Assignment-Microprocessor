@@ -18,8 +18,9 @@ void outputDisable (void);
 void clockON (void);
 void clockOFF (void);
 void dataOUT (GPIO_PinState);
-uint8_t getBitValue (uint8_t, uint8_t);
-void Led_Display(uint8_t);
-
+uint8_t getBitValue (uint32_t, int);
+void Led_Display(uint32_t);
+void ledDisplay1();
+void enableLedPannel(int);
 
 #endif /* INC_LED_DISPLAY_H_ */

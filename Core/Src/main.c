@@ -23,6 +23,10 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "led-display.h"
+#include "software_timer.h"
+#include "global.h"
+#include "lcd.h"
+#include "fsm.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -40,6 +44,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
@@ -50,6 +56,7 @@ TIM_HandleTypeDef htim3;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -88,8 +95,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM3_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  HAL_TIM_Base_Start_IT(&htim3);
+  HAL_GPIO_WritePin(OE_245_GPIO_Port, OE_245_Pin, RESET);
+  outputEnable();
 
+  Lcd_Initialization();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -97,11 +109,13 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  for (int i = 0; i < 2; i++){
-		  HAL_GPIO_TogglePin(LED_BLINKY_GPIO_Port, LED_BLINKY_Pin);
-		  Led_Display(led_buffer[i]);
-		  HAL_Delay(2000);
-	  }
+//	  for (int i = 1; i < 5; i++){
+//		  HAL_GPIO_TogglePin(LED_BLINKY_GPIO_Port, LED_BLINKY_Pin);
+//		  enableLedPannel(i);
+//		  HAL_Delay(1000);
+//	  }
+	LCD_Testing();
+	fsm();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -127,6 +141,7 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
   /** Initializes the CPU, AHB and APB buses clocks
   */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -140,6 +155,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -220,8 +269,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOC, LED_SCK_Pin|LED_LE_Pin|LED_OE_Pin|LED_SDI_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LED_BLINKY_Pin|RED_LED_PDST_Pin|GREEN_LED_1_Pin|RED_LED_2_Pin
-                          |GREEN_LED_2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LED_BLINKY_Pin|RED_LED_PDST_Pin|GPIO_PIN_12|GPIO_PIN_13
+                          |GPIO_PIN_14|GPIO_PIN_15|GREEN_LED_1_Pin|RED_LED_2_Pin
+                          |GREEN_LED_2_Pin|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GREEN_LED_PDST_Pin|RED_LED_1_Pin, GPIO_PIN_RESET);
@@ -254,10 +304,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(BUTTON_3_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_BLINKY_Pin RED_LED_PDST_Pin GREEN_LED_1_Pin RED_LED_2_Pin
-                           GREEN_LED_2_Pin */
-  GPIO_InitStruct.Pin = LED_BLINKY_Pin|RED_LED_PDST_Pin|GREEN_LED_1_Pin|RED_LED_2_Pin
-                          |GREEN_LED_2_Pin;
+  /*Configure GPIO pins : LED_BLINKY_Pin RED_LED_PDST_Pin PB12 PB13
+                           PB14 PB15 GREEN_LED_1_Pin RED_LED_2_Pin
+                           GREEN_LED_2_Pin PB8 PB9 */
+  GPIO_InitStruct.Pin = LED_BLINKY_Pin|RED_LED_PDST_Pin|GPIO_PIN_12|GPIO_PIN_13
+                          |GPIO_PIN_14|GPIO_PIN_15|GREEN_LED_1_Pin|RED_LED_2_Pin
+                          |GREEN_LED_2_Pin|GPIO_PIN_8|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -280,7 +332,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim){
+	timer_run();
+}
 /* USER CODE END 4 */
 
 /**
@@ -314,5 +368,3 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
